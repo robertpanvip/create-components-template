@@ -1,0 +1,30 @@
+{
+  "name": "create-components-template",
+  "version": "1.0.3",
+  "description": "create-components",
+  "scripts": {
+    "test-esno": "esno src/index.ts",
+    "test": "node bin/index.js ",
+    "build": "esno build.ts",
+    "publish": "es-pkg publish"
+  },
+  "engines": {
+    "node": ">=14.18.0"
+  },
+  "bin": {
+    "create-components-template": "./bin/index.js",
+    "create-components": "./bin/index.js",
+    "cct": "./bin/index.js"
+  },
+  "dependencies": {
+    "chalk": "^4.1.0",
+    "create-vite": "^2.9.4",
+    "esno": "^0.16.3",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.1",
+    "es-pkg": "^1.0.4",
+    "typescript": "^4.7.4"
+  }
+}
