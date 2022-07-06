@@ -16,6 +16,19 @@
     "create-components": "./bin/index.js",
     "cct": "./bin/index.js"
   },
+  "keywords": [
+    "components-template"
+  ],
+  "homepage": "https://github.com/robertpanvip/create-components-template.git",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/robertpanvip/create-components-template.git"
+  },
+  "bugs": {
+    "url": "https://github.com/robertpanvip/create-components-template/issues"
+  },
+  "author": "pan",
+  "license": "ISC",
   "dependencies": {
     "chalk": "^4.1.0",
     "create-vite": "^2.9.4",
