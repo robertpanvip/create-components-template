@@ -92,7 +92,18 @@ async function main() {
     )
 
     pkg.name = packageName || getProjectName()
-
+    pkg.keywords = [packageName]
+    pkg.keywords = [packageName];
+    pkg.homepage = `https://github.com/robertpanvip/${packageName}.git`;
+    pkg.repository = {
+        type: "git",
+        url: `https://github.com/robertpanvip/${packageName}.git`
+    };
+    pkg.bugs = {
+        url: `https://github.com/robertpanvip/${packageName}/issues`
+    };
+    pkg.author = "pan"
+    pkg.license = "ISC"
     write('package.json', JSON.stringify(pkg, null, 2))
     const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent)
     const pkgManager = pkgInfo ? pkgInfo.name : 'npm'

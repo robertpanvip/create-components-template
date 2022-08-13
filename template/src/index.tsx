@@ -1,7 +1,6 @@
 import * as React from "react"
 
 interface TestProps {
-    description?: number
 }
 
 const Test: React.FC<TestProps> = (props) => {
