@@ -16,7 +16,7 @@ async function main() {
     let targetDir = '.';
     const getProjectName = () =>
         targetDir === '.' ? path.basename(path.resolve()) : targetDir
-    let result: { overwrite?: string, packageName?: string } = {};
+    let result: { overwrite?: string, packageName?: string, gitInit?: boolean } = {};
     try {
         result = await prompts(
             [
@@ -56,13 +56,19 @@ async function main() {
                     validate: (dir) =>
                         isValidPackageName(dir) || 'Invalid package.json name'
                 },
+                {
+                    type: 'confirm',
+                    name: 'gitInit',
+                    message: chalk.reset('init git ?'),
+                    initial:true
+                },
             ]
         )
     } catch (cancelled) {
         console.log(cancelled.message)
         return
     }
-    const {overwrite, packageName} = result;
+    const {overwrite, packageName, gitInit} = result;
     const root = path.join(cwd, targetDir);
 
     if (overwrite) {
@@ -128,8 +134,12 @@ async function main() {
     writeTpl(path.join(root, `/src/index.tsx`), fields);
     writeTpl(path.join(root, `/examples/src/App.tsx`), fields);
 
-    await run(`git`, ["init"])
-    await run(`git`, ["add","."])
+    if(gitInit){
+        await run(`git`, ["init"])
+        await run(`git`, ["add", "."])
+    }
+
+
     const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent)
     const pkgManager = pkgInfo ? pkgInfo.name : 'npm'
 
