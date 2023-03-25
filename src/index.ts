@@ -3,6 +3,7 @@ import prompts from "prompts"
 import * as chalk from 'chalk';// 改变屏幕文字颜色
 import * as fs from "fs"
 import * as path from "path";
+import type {Options as ExecaOptions, ExecaReturnValue} from 'execa'
 
 const argv = process.argv.slice(2)
 const cwd = process.cwd()
@@ -91,20 +92,44 @@ async function main() {
         fs.readFileSync(path.join(templateDir, `package.json`), 'utf-8')
     )
 
-    pkg.name = packageName || getProjectName()
-    pkg.keywords = [packageName]
-    pkg.keywords = [packageName];
-    pkg.homepage = `https://github.com/robertpanvip/${packageName}.git`;
+    const projectName = getProjectName()
+    const validProjectName = toValidPackageName(projectName)
+    const pkgName = packageName || validProjectName
+
+    pkg.name = pkgName
+    pkg.keywords = [projectName]
+    pkg.description = projectName;
+    pkg.homepage = `https://github.com/robertpanvip/${validProjectName}.git`;
     pkg.repository = {
         type: "git",
-        url: `https://github.com/robertpanvip/${packageName}.git`
+        url: `https://github.com/robertpanvip/${validProjectName}.git`
     };
     pkg.bugs = {
-        url: `https://github.com/robertpanvip/${packageName}/issues`
+        url: `https://github.com/robertpanvip/${validProjectName}/issues`
     };
     pkg.author = "pan"
     pkg.license = "ISC"
     write('package.json', JSON.stringify(pkg, null, 2))
+
+    const esPkg = JSON.parse(
+        fs.readFileSync(path.join(templateDir, `espkg.json`), 'utf-8')
+    )
+    esPkg.publishDir = `${validProjectName}-npm`
+    write('espkg.json', JSON.stringify(esPkg, null, 2))
+
+    const validName = toValidComponentName(projectName)
+
+    const fields = {
+        isHook: validName.startsWith("use"),
+        hookName: validName,
+        componentName: validName,
+        hookNameFirstUpperCase: validName.charAt(0).toUpperCase() + validName.slice(1)
+    }
+    writeTpl(path.join(root, `/src/index.tsx`), fields);
+    writeTpl(path.join(root, `/examples/src/App.tsx`), fields);
+
+    await run(`git`, ["init"])
+    await run(`git`, ["add","."])
     const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent)
     const pkgManager = pkgInfo ? pkgInfo.name : 'npm'
 
@@ -123,6 +148,40 @@ async function main() {
             break
     }
     console.log()
+}
+
+function writeTpl(targetPath: string, fields: object) {
+    let result = "";
+    (() => {
+        const content = fs.readFileSync(targetPath, 'utf-8')
+        const run = `(()=>{
+                with (fields) {
+                    result = eval(content);
+                }
+            })()`;
+        eval(run);
+    })()
+    fs.writeFileSync(targetPath, result, 'utf-8')
+}
+
+export async function run(
+    bin: string,
+    args: string[],
+    opts: ExecaOptions<string> = {}
+): Promise<ExecaReturnValue<string>> {
+    //由于execa 的包是esm形式的
+    const {execa} = await import("execa")
+    return execa(bin, args, {stdio: 'inherit', ...opts})
+}
+
+function toValidComponentName(name: string) {
+    const _name = name.replace(/_(\w)/g, (all, letter) => letter.toUpperCase());
+    const res = _name.replace(/-(\w)/g, (all, letter) => letter.toUpperCase());
+    if (res.startsWith('use')) {
+        return res;
+    }
+    const [first, ...rest] = res.split('');
+    return [first.toUpperCase(), ...rest].join('');
 }
 
 function formatTargetDir(targetDir: string) {
