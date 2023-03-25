@@ -138,7 +138,6 @@ async function main() {
 
     if (gitInit) {
         await run(`git`, ["init"])
-        await run(`git`, ["add", "."])
     }
 
 
