@@ -36,9 +36,13 @@
     "esno": "^0.16.3",
     "prompts": "^2.4.2"
   },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "devDependencies": {
     "@types/node": "^18.0.1",
-    "es-pkg": "@latest",
+    "es-pkg": "latest",
     "typescript": "^4.7.4"
   }
 }
