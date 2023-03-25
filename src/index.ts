@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 import prompts from "prompts"
-import * as chalk from 'chalk';// 改变屏幕文字颜色
 import * as fs from "fs"
 import * as path from "path";
+import * as execa from "execa"
+import * as chalk from "chalk"
+
 import type {Options as ExecaOptions, ExecaReturnValue} from 'execa'
 
 const argv = process.argv.slice(2)
@@ -60,7 +62,7 @@ async function main() {
                     type: 'confirm',
                     name: 'gitInit',
                     message: chalk.reset('init git ?'),
-                    initial:true
+                    initial: true
                 },
             ]
         )
@@ -134,7 +136,7 @@ async function main() {
     writeTpl(path.join(root, `/src/index.tsx`), fields);
     writeTpl(path.join(root, `/examples/src/App.tsx`), fields);
 
-    if(gitInit){
+    if (gitInit) {
         await run(`git`, ["init"])
         await run(`git`, ["add", "."])
     }
@@ -179,9 +181,9 @@ export async function run(
     args: string[],
     opts: ExecaOptions<string> = {}
 ): Promise<ExecaReturnValue<string>> {
-    //由于execa 的包是esm形式的
-    const {execa} = await import("execa")
-    return execa(bin, args, {stdio: 'inherit', ...opts})
+    if ("default" in execa && typeof execa.default === "function") {
+        return execa.default(bin, args, {stdio: 'inherit', ...opts})
+    }
 }
 
 function toValidComponentName(name: string) {
