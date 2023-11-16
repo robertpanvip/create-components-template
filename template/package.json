@@ -26,7 +26,7 @@
     "@typescript-eslint/eslint-plugin": "^5.30.4",
     "@typescript-eslint/parser": "^5.30.4",
     "@vitejs/plugin-react": "^1.3.2",
-    "es-pkg": "@latest",
+    "es-pkg": "latest",
     "eslint": "^8.19.0",
     "eslint-plugin-react": "^7.30.1",
     "sass": "^1.53.0",
