@@ -1,4 +1,4 @@
-`import {defineConfig} from "espkg";
+`import {defineConfig} from "es-pkg";
 
 export default defineConfig({
     "es": "./es",
