@@ -95,7 +95,9 @@ async function main() {
     for (const file of files.filter((f) => f !== 'package.json')) {
         write(file)
     }
-
+    //.gitignore 文件默认不发布到npm 所以模板文件改了个名称
+    fs.renameSync(path.join(root, '.gitignore-tpl'), path.join(root, '.gitignore'));
+    copy(path.join(templateDir, '.gitignore-tpl'), path.join(root, '.gitignore'))
     const pkg = JSON.parse(
         fs.readFileSync(path.join(templateDir, `package.json`), 'utf-8')
     )
@@ -119,11 +121,11 @@ async function main() {
     pkg.license = "ISC"
     write('package.json', JSON.stringify(pkg, null, 2))
 
-    const esPkg = JSON.parse(
+    /*const esPkg = JSON.parse(
         fs.readFileSync(path.join(templateDir, `espkg.json`), 'utf-8')
     )
     esPkg.publishDir = `${validProjectName}-npm`
-    write('espkg.json', JSON.stringify(esPkg, null, 2))
+    write('espkg.json', JSON.stringify(esPkg, null, 2))*/
 
     const validName = toValidComponentName(projectName)
 
@@ -131,8 +133,10 @@ async function main() {
         isHook: validName.startsWith("use"),
         hookName: validName,
         componentName: validName,
-        hookNameFirstUpperCase: validName.charAt(0).toUpperCase() + validName.slice(1)
+        hookNameFirstUpperCase: validName.charAt(0).toUpperCase() + validName.slice(1),
+        publishDir:`../${validProjectName}-npm`
     }
+    writeTpl(path.join(root, `/espkg.config.ts`), fields);
     writeTpl(path.join(root, `/src/index.tsx`), fields);
     writeTpl(path.join(root, `/examples/src/App.tsx`), fields);
 
