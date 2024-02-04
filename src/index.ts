@@ -12,13 +12,14 @@ const cwd = process.cwd()
 const renameFiles = {
     _gitignore: '.gitignore'
 }
+type Result = { overwrite?: string, packageName?: string, gitInit?: boolean, contributors?: string }
 
 async function main() {
     const defaultTargetDir = argv[0] || 'create-components-project'
     let targetDir = '.';
     const getProjectName = () =>
         targetDir === '.' ? path.basename(path.resolve()) : targetDir
-    let result: { overwrite?: string, packageName?: string, gitInit?: boolean } = {};
+    let result: Result = {};
     try {
         result = await prompts(
             [
@@ -42,7 +43,7 @@ async function main() {
                         ` is not empty. Remove existing files and continue?`
                 },
                 {
-                    type: (_, {overwrite} = {overwrite: undefined}) => {
+                    type: (_, {overwrite} = {overwrite: undefined} as any) => {
                         if (overwrite === false) {
                             throw new Error(chalk.red('✖') + ' Operation cancelled')
                         }
@@ -56,7 +57,10 @@ async function main() {
                     message: chalk.reset('Package name:'),
                     initial: () => toValidPackageName(getProjectName()),
                     validate: (dir) =>
-                        isValidPackageName(dir) || 'Invalid package.json name'
+                        isValidPackageName(dir) || 'Invalid package.json name',
+                    onState: (state) => {
+                        targetDir = formatTargetDir(state.value) || defaultTargetDir
+                    }
                 },
                 {
                     type: 'confirm',
@@ -64,13 +68,19 @@ async function main() {
                     message: chalk.reset('init git ?'),
                     initial: true
                 },
+                {
+                    type: 'text',
+                    name: 'contributors',
+                    message: chalk.reset(`contributors: ?`),
+                    initial: "xx"
+                },
             ]
         )
     } catch (cancelled) {
         console.log(cancelled.message)
         return
     }
-    const {overwrite, packageName, gitInit} = result;
+    const {overwrite, packageName, gitInit, contributors} = result;
     const root = path.join(cwd, targetDir);
 
     if (overwrite) {
@@ -104,20 +114,19 @@ async function main() {
 
     const projectName = getProjectName()
     const validProjectName = toValidPackageName(projectName)
-    const pkgName = packageName || validProjectName
 
-    pkg.name = pkgName
+    pkg.name = validProjectName
     pkg.keywords = [projectName]
     pkg.description = projectName;
-    pkg.homepage = `https://github.com/robertpanvip/${validProjectName}.git`;
+    pkg.homepage = `https://github.com/${contributors}/${validProjectName}.git`;
     pkg.repository = {
         type: "git",
-        url: `https://github.com/robertpanvip/${validProjectName}.git`
+        url: `https://github.com/${contributors}/${validProjectName}.git`
     };
     pkg.bugs = {
-        url: `https://github.com/robertpanvip/${validProjectName}/issues`
+        url: `https://github.com/${contributors}/${validProjectName}/issues`
     };
-    pkg.author = "pan"
+    pkg.author = contributors
     pkg.license = "ISC"
     write('package.json', JSON.stringify(pkg, null, 2))
 
@@ -134,11 +143,11 @@ async function main() {
         hookName: validName,
         componentName: validName,
         hookNameFirstUpperCase: validName.charAt(0).toUpperCase() + validName.slice(1),
-        publishDir:`../${validProjectName}-npm`
+        publishDir: `../${validProjectName}-npm`
     }
     writeTpl(path.join(root, `/espkg.config.ts`), fields);
     writeTpl(path.join(root, `/src/index.tsx`), fields);
-    writeTpl(path.join(root, `/examples/src/App.tsx`), fields);
+    writeTpl(path.join(root, `/examples/App.tsx`), fields);
 
     if (gitInit) {
         await run(`git`, ["init"])
@@ -221,12 +230,26 @@ function isValidPackageName(projectName: string) {
  * @param {string} projectName
  */
 function toValidPackageName(projectName: string) {
-    return projectName
-        .trim()
+    return getKebabCase(projectName
+        .trim())
         .toLowerCase()
         .replace(/\s+/g, '-')
         .replace(/^[._]/, '')
         .replace(/[^a-z0-9-~]+/g, '-')
+}
+
+function getKebabCase(str: string) {
+    str = str.replace(/^-+|-+$/g, '');
+    let temp = str.replace(/[A-Z]/g, function (i, index) {
+        if (str[index - 1] === "-") {
+            return i.toLowerCase();
+        }
+        return '-' + i.toLowerCase();
+    })
+    if (temp.slice(0, 1) === '-') {
+        temp = temp.slice(1);   //如果首字母是大写，执行replace时会多一个_，需要去掉
+    }
+    return temp;
 }
 
 /**
@@ -277,3 +300,12 @@ main().catch(err => {
     console.error(err);
     process.exit()
 })
+// Listen for key events on stdin
+process.stdin.on('keypress', (key, data) => {
+    if (data && data.ctrl && data.name === 'c') {
+        console.log('\nCtrl+C pressed. Exiting...');
+        process.exit();
+    }
+});
+process.stdin.setRawMode(true);
+process.stdin.resume();

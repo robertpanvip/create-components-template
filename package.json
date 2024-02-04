@@ -43,6 +43,7 @@
   },
   "devDependencies": {
     "@types/node": "^18.0.1",
+    "@types/prompts": "^2.4.9",
     "es-pkg": "latest",
     "typescript": "^4.7.4"
   }
