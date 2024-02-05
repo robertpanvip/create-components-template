@@ -4,11 +4,11 @@ export interface ${hookNameFirstUpperCase}Config {
     test?:number
 }
 
-const ${hookName} = (props:${hookNameFirstUpperCase}Config) => {
+const ${hookName} = (config:${hookNameFirstUpperCase}Config) => {
     return (<></>)
 }
 export default ${hookName}` : `import * as React from "react"
-interface ${componentName}Props {
+export interface ${componentName}Props {
     test?:number
 }
 const ${componentName}: React.FC<${componentName}Props> = (props) => {

@@ -2,10 +2,20 @@
 import prompts from "prompts"
 import * as fs from "fs"
 import * as path from "path";
-import * as execa from "execa"
 import * as chalk from "chalk"
-
-import type {Options as ExecaOptions, ExecaReturnValue} from 'execa'
+import {
+    copy,
+    emptyDir,
+    formatTargetDir,
+    isEmpty,
+    isValidPackageName,
+    pkgFromUserAgent,
+    resolvePackageJson,
+    run,
+    toValidComponentName,
+    toValidPackageName,
+    writeTpl
+} from "./utils";
 
 const argv = process.argv.slice(2)
 const cwd = process.cwd()
@@ -108,9 +118,7 @@ async function main() {
     //.gitignore 文件默认不发布到npm 所以模板文件改了个名称
     fs.renameSync(path.join(root, '.gitignore-tpl'), path.join(root, '.gitignore'));
     copy(path.join(templateDir, '.gitignore-tpl'), path.join(root, '.gitignore'))
-    const pkg = JSON.parse(
-        fs.readFileSync(path.join(templateDir, `package.json`), 'utf-8')
-    )
+    const pkg = resolvePackageJson(templateDir)
 
     const projectName = getProjectName()
     const validProjectName = toValidPackageName(projectName)
@@ -130,12 +138,6 @@ async function main() {
     pkg.license = "ISC"
     write('package.json', JSON.stringify(pkg, null, 2))
 
-    /*const esPkg = JSON.parse(
-        fs.readFileSync(path.join(templateDir, `espkg.json`), 'utf-8')
-    )
-    esPkg.publishDir = `${validProjectName}-npm`
-    write('espkg.json', JSON.stringify(esPkg, null, 2))*/
-
     const validName = toValidComponentName(projectName)
 
     const fields = {
@@ -148,12 +150,13 @@ async function main() {
     writeTpl(path.join(root, `/espkg.config.ts`), fields);
     writeTpl(path.join(root, `/src/index.tsx`), fields);
     writeTpl(path.join(root, `/examples/App.tsx`), fields);
+    replaceReadMe(root,validProjectName)
 
     if (gitInit) {
-        await run(`git`, ["init"])
+        await run(`git`, ["init"], {
+            cwd: root,
+        })
     }
-
-
     const pkgInfo = pkgFromUserAgent(process.env.npm_config_user_agent)
     const pkgManager = pkgInfo ? pkgInfo.name : 'npm'
 
@@ -174,126 +177,9 @@ async function main() {
     console.log()
 }
 
-function writeTpl(targetPath: string, fields: object) {
-    let result = "";
-    (() => {
-        const content = fs.readFileSync(targetPath, 'utf-8')
-        const run = `(()=>{
-                with (fields) {
-                    result = eval(content);
-                }
-            })()`;
-        eval(run);
-    })()
-    fs.writeFileSync(targetPath, result, 'utf-8')
-}
-
-export async function run(
-    bin: string,
-    args: string[],
-    opts: ExecaOptions<string> = {}
-): Promise<ExecaReturnValue<string>> {
-    if ("default" in execa && typeof execa.default === "function") {
-        return execa.default(bin, args, {stdio: 'inherit', ...opts})
-    }
-}
-
-function toValidComponentName(name: string) {
-    const _name = name.replace(/_(\w)/g, (all, letter) => letter.toUpperCase());
-    const res = _name.replace(/-(\w)/g, (all, letter) => letter.toUpperCase());
-    if (res.startsWith('use')) {
-        return res;
-    }
-    const [first, ...rest] = res.split('');
-    return [first.toUpperCase(), ...rest].join('');
-}
-
-function formatTargetDir(targetDir: string) {
-    return targetDir?.trim().replace(/\/+$/g, '')
-}
-
-function isEmpty(path: string) {
-    const files = fs.readdirSync(path)
-    return files.length === 0 || (files.length === 1 && files[0] === '.git')
-}
-
-/**
- * @param {string} projectName
- */
-function isValidPackageName(projectName: string) {
-    return /^(?:@[a-z0-9-*~][a-z0-9-*._~]*\/)?[a-z0-9-~][a-z0-9-._~]*$/.test(
-        projectName
-    )
-}
-
-/**
- * @param {string} projectName
- */
-function toValidPackageName(projectName: string) {
-    return getKebabCase(projectName
-        .trim())
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-        .replace(/^[._]/, '')
-        .replace(/[^a-z0-9-~]+/g, '-')
-}
-
-function getKebabCase(str: string) {
-    str = str.replace(/^-+|-+$/g, '');
-    let temp = str.replace(/[A-Z]/g, function (i, index) {
-        if (str[index - 1] === "-") {
-            return i.toLowerCase();
-        }
-        return '-' + i.toLowerCase();
-    })
-    if (temp.slice(0, 1) === '-') {
-        temp = temp.slice(1);   //如果首字母是大写，执行replace时会多一个_，需要去掉
-    }
-    return temp;
-}
-
-/**
- * @param {string} dir
- */
-function emptyDir(dir) {
-    if (!fs.existsSync(dir)) {
-        return
-    }
-    for (const file of fs.readdirSync(dir)) {
-        fs.rmSync(path.resolve(dir, file), {recursive: true, force: true})
-    }
-}
-
-/**
- * @param {string} srcDir
- * @param {string} destDir
- */
-function copyDir(srcDir: string, destDir: string) {
-    fs.mkdirSync(destDir, {recursive: true})
-    for (const file of fs.readdirSync(srcDir)) {
-        const srcFile = path.resolve(srcDir, file)
-        const destFile = path.resolve(destDir, file)
-        copy(srcFile, destFile)
-    }
-}
-
-function copy(src: string, dest: string) {
-    const stat = fs.statSync(src)
-    if (stat.isDirectory()) {
-        copyDir(src, dest)
-    } else {
-        fs.copyFileSync(src, dest)
-    }
-}
-
-function pkgFromUserAgent(userAgent: string) {
-    if (!userAgent) return undefined
-    const pkgSpec = userAgent.split(' ')[0]
-    const pkgSpecArr = pkgSpec.split('/')
-    return {
-        name: pkgSpecArr[0],
-        version: pkgSpecArr[1]
-    }
+function replaceReadMe(root: string, validProjectName: string) {
+    const md = fs.readFileSync(path.join(root, `/README.md`), 'utf-8')
+    fs.writeFileSync(path.join(root, `/README.md`), md.replace('vite-com', validProjectName), 'utf-8')
 }
 
 main().catch(err => {

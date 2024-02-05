@@ -3,5 +3,6 @@
 export default defineConfig({
     "es": "./es",
     "lib": "./lib",
+    "typings": "./es",
     "publishDir":"${publishDir}"
 })`
