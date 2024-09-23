@@ -1,8 +1,9 @@
 `import {defineConfig} from "es-pkg";
 
 export default defineConfig({
-    "es": "./es",
-    "lib": "./lib",
-    "typings": "./es",
+    "es": "./npm/esm",
+    "cjs": "./npm/cjs",
+    "typings": "./src",
+    "entry":"./src"
     "publishDir":"${publishDir}"
 })`
