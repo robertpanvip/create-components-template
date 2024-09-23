@@ -1,10 +1,10 @@
-import type {BuildOptions} from 'esbuild'
-import {build} from 'esbuild'
+import type { BuildOptions } from 'esbuild'
+import { build } from 'esbuild'
 
 async function main() {
     const buildOptions: BuildOptions = {
         absWorkingDir: process.cwd(),
-        entryPoints: ['./src/index.ts'],
+        entryPoints: ['./src/index.ts', "./src/utils.ts"],
         bundle: false,
         platform: 'node',
         format: 'cjs',
