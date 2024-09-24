@@ -145,7 +145,7 @@ async function main() {
         hookName: validName,
         componentName: validName,
         hookNameFirstUpperCase: validName.charAt(0).toUpperCase() + validName.slice(1),
-        publishDir: `../${validProjectName}-npm`
+        publishDir: `./npm`
     }
     writeTpl(path.join(root, `/espkg.config.ts`), fields);
     writeTpl(path.join(root, `/src/index.tsx`), fields);
